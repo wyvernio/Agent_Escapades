@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Game</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Center content for the game */
+        #game-container, #start-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        /* Set dimensions for game images */
+        #game-image {
+            width: 50%;
+            height: auto;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+        #choices button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        #choices button:hover {
+            background-color: rgba(255, 255, 255, 1);
+        }
+
+        /* Styling for the start menu */
+        #start-container {
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        #start-container button {
+            margin: 10px;
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: green;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        #start-container button:hover {
+            background-color: darkgreen;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Start Menu -->
+    <div id="start-container">
+        <img src="images/start_menu.jpg" alt="Start Menu Image">
+        <h1>Welcome to the Interactive Game</h1>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <!-- Game Container -->
+    <div id="game-container" style="display: none;">
+        <img id="game-image" src="default-image.jpg" alt="Game Image">
+        <h1>Scene 1</h1>
+        <p id="description">Loading game...</p>
+        <div id="choices" style="display: none;">
+            <button onclick="makeChoice(0)">choice 1</button>
+            <button onclick="makeChoice(1)">choice 2</button>
+        </div>
+    </div>
+
+    <script>
+        let currentRoom = "entrance"; // This should be fetched initially from the server
+
+        // Function to handle starting the game
+        function startGame() {
+            // Hide the start menu and show the game container
+            document.getElementById('start-container').style.display = 'none';
+            document.getElementById('game-container').style.display = 'flex';
+
+            // Fetch initial game state from server
+            fetch('/start_game')
+            .then(response => response.json())
+            .then(data => {
+                currentRoom = data.current_room;
+                updateGame(data);
+            });
+        }
+
+        function updateGame(info) {
+            // Update the game description
+            document.getElementById('description').textContent = info.description;
+
+            // Dynamically update the game image based on room
+            let gameImage = document.getElementById('game-image');
+            if (info.current_room === "entrance") {
+                gameImage.src = 'entrance.jpg'; // Replace with the path to the entrance image
+            } else if (info.current_room === "dark_hallway") {
+                gameImage.src = 'dark_hallway.jpg'; // Replace with the path to the dark hallway image
+            } else if (info.current_room === "glowing_door") {
+                gameImage.src = 'glowing_door.jpg'; // Replace with the path to the glowing door image
+            }
+
+            // Show or hide choices based on the agent's status
+            if (!info.agent_alive) {
+                document.getElementById('choices').style.display = 'none';
+            } else {
+                document.getElementById('choices').style.display = 'block';
+            }
+        }
+
+        function makeChoice(choice) {
+            fetch('/process_choice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ room: currentRoom, choice: choice })
+            })
+            .then(response => response.json())
+            .then(data => {
+                currentRoom = data.next_room;
+                updateGame(data);
+            });
+        }
+    </script>
+</body>
+</html>
